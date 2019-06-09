@@ -14,6 +14,8 @@ socket.on('connect', function(){
     socket.emit("userEntry", { username , room}, function(data)
     {
         console.log(data);
+        renderUserList(data)
+        
      });
 });
 
