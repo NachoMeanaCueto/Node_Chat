@@ -1,6 +1,6 @@
 const { io } = require("../server");
 const { Users } = require("../classes/users");
-const { CreateMessage } = require("../utils/utils");
+const { CreateMessage, CreateUserMessage } = require("../utils/utils");
 const users = new Users();
 
 io.on('connection', ( client ) => {
@@ -15,8 +15,8 @@ io.on('connection', ( client ) => {
          
     })
 
-    client.on("userEntry", (data, callback ) => { 
-        console.log("user connected", data.username );
+    client.on("userEntry", (data, callback) => { 
+        console.log("user connected", data.username, data.image );
 
         if(!data.username || !data.room){
             return callback({
@@ -25,16 +25,17 @@ io.on('connection', ( client ) => {
             })
         }
 
-        let userList = users.addUser(client.id,data.username,data.room);
+        let clientId = client.id;
+        let userList = users.addUser(clientId, data.username, data.image ,data.room);
 
         client.join(data.room);
         client.broadcast.to(data.room).emit("GlobalMessage", CreateMessage("System", `${data.username} join chat`))
         client.broadcast.to(data.room).emit("userList",   users.getUsersByRoom(data.room));
 
-        return callback(userList);
+        return callback({ clientId , userList });
     });
 
-    client.emit('ServerEvent', ({id:1, datastring:'string'}));
+    // client.emit('ServerEvent', ({id:1, datastring:'string'}));
 
     client.on('PrivateMessage', function(data){
 
@@ -48,25 +49,24 @@ io.on('connection', ( client ) => {
 
         let user = users.getUserById(client.id);
           
-        client.broadcast.to(data.targetId).emit('PrivateMessage', {message: CreateMessage(`${user.name}`, `${data.message}`) });
+        client.broadcast.to(data.targetId).emit('PrivateMessage', { message: CreateUserMessage(user.userId,data.message) });
         
-
-
         console.log("Catch PrivateMessage: ", data);
     });
 
-    client.on('EmmitMessage', (data, callback ) => { 
+    client.on('EmmitMessage', (data, callback) => { 
          console.log("message: ", data );
 
-         client.broadcast.emit('ServerEvent',data);
-        //  var message = 'Error: user not found';
+        let user = users.getUserById(data.userId);
+        let username = user.name;
+        let userImage = user.image;
+        resultmessage = CreateUserMessage(data.userId, username, userImage, data.message);
 
-        //  if(data.user){
-        //     message ="success";
-        //  }
-        //  callback(message);
-
+        client.broadcast.emit("RoomMessage", resultmessage )
+    
+        callback(resultmessage);
+        
         });
-    //  console.log(`${client} conectado`);
+   
     console.log(`Back client conectado`); 
 });

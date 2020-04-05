@@ -10,12 +10,11 @@ if(!room) room = 'default';
 
 socket.on('connect', function(){
     console.log("connected");
-
-    socket.emit("userEntry", { username , room}, function(data)
+    var image = Math.floor(Math.random() * 13)+1;
+    socket.emit("userEntry", { username, image, room }, function(data)
     {
-        console.log(data);
-        renderUserList(data)
-        
+        setCurrentUserId(data.clientId);
+        renderUserList(data.userList);  
      });
 });
 
@@ -24,9 +23,17 @@ socket.on('disconnect', function(){
 });
 
 socket.on('GlobalMessage', function(data){
-   console.log(`${data.user}: ${data.message}`);
+    console.log(`Globalmessage`, data );
+   //console.log(`${data.user}: ${data.message}`);
+   
 });
 
+socket.on('RoomMessage', function(data){
+
+    renderMessage(data.id, data.username, data.userImage, data.message, data.date);
+   //console.log(`${data.user}: ${data.message}`);
+   
+});
 // socket.emit('PrivateMessage', { targetId , menssage } ); 
 
 
@@ -38,4 +45,9 @@ socket.on('ServerEvent', function(data){
     console.log("Catch ServerEvent: ", data);
 });
 
-socket.emit('EmmitMessage', { user:'usuario', menssage: 'message...' } , function( resp ){console.log('Server response ', resp); }); 
+function SendGlobalMessage(userId, message){
+
+    socket.emit('EmmitMessage', { userId: userId, message: message } , function( resp ){console.log('Server response ', resp); }); 
+
+}
+
